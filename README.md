@@ -26,7 +26,7 @@ Before running the script, the following variables need to be set:
 
 1. **Initial Data Fetch**: Queries the Nostr relays for the latest event ID matching the specified tags and public key.
 2. **Event Data Retrieval**: Fetches repost (kind 6) events using this ID and extracts public keys from these events.
-3. **Data Processing**: For each unique public key, retrieves related data, extracts the `name` and `LUD-16` values, and sends them to the specified webhook URL if they are new.  In the context of the Lightning Goats project these values are later used to reward up to 10 users who have joined the Lightning Goats Cyber Herd by repostingthe daily "Zap notes. Feed Goats." post with a #cyber-herd tag.  This happens each time the feeder is triggered giving "treats" to the cyber herd along with the actual Lightning Goats goat herd irl.
+3. **Data Processing**: For each unique public key, retrieves related data, extracts the `name` and `LUD-16` values, and sends them to the specified webhook URL if they are new.  In the context of the Lightning Goats project these values are later used to reward up to 10 users who have joined the Lightning Goats Cyber Herd by reposting the daily "Zap notes. Feed Goats." post with a #cyber-herd tag.  This happens each time the feeder is triggered giving "treats" (sats) to the cyber herd along with dispensing actual goat treats to the Lightning Goats goat herd irl.
 
 ## Temporary File
 
