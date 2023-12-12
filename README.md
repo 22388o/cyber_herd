@@ -37,7 +37,7 @@ Before running the script, the following variables need to be set:
 
 - `jq`: A command-line JSON processor.
 - `curl`: A tool to transfer data from or to a server.
-- 'nak': A command-line utility specific to Nostr network interactions (not a standard tool, needs to be available in the system path).
+- `nak`: A command-line utility specific to Nostr network interactions https://github.com/fiatjaf/nak/tree/master.
 - Ensure these tools are installed and accessible from your command line.
 
 ## Usage
