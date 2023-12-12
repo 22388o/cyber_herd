@@ -1,5 +1,5 @@
 -
-# README.md for Cyber Herd Bash Script
+# Cyber Herd Bash Script
 
 ## Description
 
