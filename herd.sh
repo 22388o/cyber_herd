@@ -5,7 +5,7 @@ hex_key="669ebbcccf409ee0467a33660ae88fd17e5379e646e41d7c236ff4963f3c36b6"  # pu
 tags=("cyber-herd" "lightning-goats")  # Tags to match
 limit=10  # Number of npubs to track
 relay_urls=("wss://lnb.bolverker.com/nostrclient/api/v1/relay" "wss://relay.damus.io" "wss://relay.primal.net")  # Relays to use
-webhook_url="https://127.0.0.1:3006/cyber_herd"
+webhook_url="https://127.0.0.1:8090/cyber_herd"
 
 # Convert relay URLs array to a space-separated string
 relay_urls_string="${relay_urls[@]}"
@@ -48,6 +48,9 @@ fi
 # Convert the JSON array to a Bash array
 readarray -t keys <<< "$(echo $pubkeys | jq -r '.[]')"
 
+# Initialize an empty JSON payload
+json_payload="{" 
+
 # Loop through each public key and run the third command
 for pubkey in "${keys[@]}"
 do
@@ -62,26 +65,24 @@ do
       continue
     fi
     
-    # Extract nip05valid, name, and LUD-16 value
+    # Extract nip05, name, and LUD-16 value
     nip05=$(echo "$output" | jq -r '.content | fromjson | .nip05')
     name=$(echo "$output" | jq -r '.content | fromjson | .name')
     lud16=$(echo "$output" | jq -r '.content | fromjson | .lud16' | tr -d '\n')
 
-    # Append to the temporary file if lud16 is set and nip05 is set
+    # Append to the temporary file and update JSON payload if lud16 is set and nip05 is set
     if [[ "$lud16" != "" ]] && [[ "$nip05" != "" ]]; then
         echo "$pubkey,$name,$lud16" >> "$temp_file"
+        # Add to JSON payload
+        json_payload+="\"$name\":\"$lud16\","
     fi
 done
 
-# Construct JSON payload from the temporary file
-json_payload="{"
-while IFS=, read -r pubkey name lud16; do
-    json_payload+="\"$name\":\"$lud16\","
-done < "$temp_file"
+# Finalize the JSON payload
 json_payload="${json_payload%,}}"
 json_payload+="}"
 
-# Send the JSON payload to the webhook URL
-curl -X POST -H "Content-Type: application/json" -d "$json_payload" "$webhook_url"
-
-
+# Send the JSON payload to the webhook URL if it is not empty
+if [ "$json_payload" != "{}" ]; then
+    curl -X POST -H "Content-Type: application/json" -d "$json_payload" "$webhook_url"
+fi
