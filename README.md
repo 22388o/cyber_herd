@@ -25,7 +25,7 @@ Before running the script, the following variables need to be set:
 ## Workflow
 
 1. **Initial Data Fetch**: Queries the Nostr relays for the latest event ID matching the specified tags and public key.
-2. **Event Data Retrieval**: Fetches events using this ID and extracts public keys from these events.
+2. **Event Data Retrieval**: Fetches repost (kind 6) events using this ID and extracts public keys from these events.
 3. **Data Processing**: For each unique public key, retrieves related data, extracts the `name` and `LUD-16` values, and sends them to the specified webhook URL if they are new.
 
 ## Temporary File
