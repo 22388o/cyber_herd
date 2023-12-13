@@ -44,7 +44,7 @@ Before running the script, the following variables need to be set:
 
 1. Set the configuration variables in the script as per your requirement.
 2. chmod +x /home/user/bin/herd.sh
-3. Run the script via cron: */3 * * * * /home/user/bin/herd.sh.
+3. Run the script via cron: */3 * * * * /home/user/bin/herd.sh, or use the unit files for controlling execution.
 4. The script will process data and send updates to the configured webhook URL.
 5. Set a cronjob to delete the temp file at midnight: 0 0 * * * rm /tmp/lud16_values.txt
 
