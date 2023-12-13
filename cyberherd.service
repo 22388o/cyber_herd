@@ -1,0 +1,5 @@
+[Unit]
+Description=Cyber Herd Service
+
+[Service]
+ExecStart=/home/sat/bin/herd.sh

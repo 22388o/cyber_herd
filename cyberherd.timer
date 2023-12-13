@@ -1,0 +1,9 @@
+[Unit]
+Description=Runs Cyber Herd Script every two minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+
+[Install]
+WantedBy=timers.target
