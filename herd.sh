@@ -4,7 +4,7 @@
 hex_key="669ebbcccf409ee0467a33660ae88fd17e5379e646e41d7c236ff4963f3c36b6"  # pubkey in hex of original author
 tags=("cyberherd")  # Tags to match ex: tags=("cyberherd" "lightning-goats")
 limit=10  # Number of npubs to track, cyberherd size
-relay_urls=("wss://http://127.0.0.1:3002/nostrclient/api/v1/relay" "wss://relay.damus.io" "wss://relay.primal.net")  # Relays to use
+relay_urls=("wss://127.0.0.1:3002/nostrclient/api/v1/relay" "wss://relay.damus.io" "wss://relay.primal.net")  # Relays to use
 webhook_url="http://127.0.0.1:8090/cyber_herd"
 
 relay_urls_string="${relay_urls[@]}"
