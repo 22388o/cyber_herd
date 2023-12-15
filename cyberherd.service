@@ -1,5 +1,9 @@
 [Unit]
 Description=Cyber Herd Service
+After=fastapi_app.service
 
 [Service]
+User=sat
+Group=sat
+WorkingDirectory=/home/sat/bin
 ExecStart=/home/sat/bin/herd.sh

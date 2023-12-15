@@ -2,14 +2,14 @@
 
 # Configuration variables
 hex_key="669ebbcccf409ee0467a33660ae88fd17e5379e646e41d7c236ff4963f3c36b6"  # pubkey in hex of original author
-tags=("cyber-herd")  # Tags to match ex: tags=("cyberherd" "lightning-goats")
+tags=("cyberherd")  # Tags to match ex: tags=("cyberherd" "lightning-goats")
 limit=10  # Number of npubs to track, cyberherd size
-relay_urls=("wss://lnb.bolverker.com/nostrclient/api/v1/relay" "wss://relay.damus.io" "wss://relay.primal.net")  # Relays to use
+relay_urls=("wss://http://127.0.0.1:3002/nostrclient/api/v1/relay" "wss://relay.damus.io" "wss://relay.primal.net")  # Relays to use
 webhook_url="http://127.0.0.1:8090/cyber_herd"
 
 relay_urls_string="${relay_urls[@]}"
 tag_string=$(printf " -t t=%s" "${tags[@]}")
-temp_file="/tmp/lud16_values.txt"
+temp_file="/home/sat/bin/lud16_values.txt"
 
 # Remove repeating substrings
 remove_repeats() {
@@ -17,7 +17,7 @@ remove_repeats() {
     local prev=""
     while [ "$segment" != "$prev" ]; do
         prev=$segment
-        segment=$(echo $segment | sed -r 's/(.*)\1+/\1/')
+        segment=$(echo $segment | /usr/bin/sed -r 's/(.*)\1+/\1/')
     done
     echo -n $segment
 }
@@ -27,7 +27,7 @@ process_string() {
     local input_string=$1
 
     # Remove newlines
-    input_string=$(echo "$input_string" | tr -d '\n')
+    input_string=$(echo "$input_string" | /usr/bin/tr -d '\n')
 
     # Split the input by comma and process each segment
     local output=""
@@ -56,7 +56,7 @@ if [ -f "$temp_file" ]; then
 fi
 
 # Get id of most recent tagged post
-initial_output=$(nak -s req -k 1 $tag_string -a $hex_key $relay_urls_string | jq -s 'sort_by(.created_at) | last | .id')
+initial_output=$(/usr/local/bin/nak -s req -k 1 $tag_string -a $hex_key $relay_urls_string | /usr/bin/jq -s 'sort_by(.created_at) | last | .id')
 
 if [ -z "$initial_output" ] || [ "$initial_output" == "null" ]; then
   echo "Error: Initial command returned null or empty output."
@@ -67,7 +67,7 @@ fi
 event_id=$(echo $initial_output | tr -d '"')
 
 # get pubkeys which have resposted the tagged note
-pubkeys=$(nak -s req -k 6 -e $event_id -l $limit $relay_urls_string | jq -s 'sort_by(.created_at)' | jq '[.[] | .pubkey]')
+pubkeys=$(/usr/local/bin/nak -s req -k 6 -e $event_id -l $limit $relay_urls_string | /usr/bin/jq -s 'sort_by(.created_at)' | /usr/bin/jq '[.[] | .pubkey]')
 
 if [ -z "$pubkeys" ] || [ "$pubkeys" == "null" ]; then
   echo "Error: Second command returned null or empty output."
@@ -75,7 +75,7 @@ if [ -z "$pubkeys" ] || [ "$pubkeys" == "null" ]; then
 fi
 
 # Convert the JSON array to a Bash array
-readarray -t keys <<< "$(echo $pubkeys | jq -r '.[]')"
+readarray -t keys <<< "$(echo $pubkeys | /usr/bin/jq -r '.[]')"
 
 # Initialize an empty array for JSON objects
 json_objects=()
@@ -88,7 +88,7 @@ do
     fi
     
     #get metadata for pubkey
-    output=$(nak -s req -k 0 -a "$pubkey" -l 1 $relay_urls_string | jq)
+    output=$(/usr/local/bin/nak -s req -k 0 -a "$pubkey" -l 1 $relay_urls_string | /usr/bin/jq)
     
     if [ -z "$output" ] || [ "$output" == "null" ]; then
       echo "Error: Third command returned null or empty output for pubkey $pubkey."
@@ -96,9 +96,9 @@ do
     fi
     
     # Extract nip05, name, and LUD-16 value
-    nip05=$(echo "$output" | jq -r '.content | fromjson | .nip05')
-    name=$(echo "$output" | jq -r '.content | fromjson | .name')
-    lud16=$(echo "$output" | jq -r '.content | fromjson | .lud16' | tr -d '\n')
+    nip05=$(echo "$output" | /usr/bin/jq -r '.content | fromjson | .nip05')
+    name=$(echo "$output" | /usr/bin/jq -r '.content | fromjson | .name')
+    lud16=$(echo "$output" | /usr/bin/jq -r '.content | fromjson | .lud16')
 
     if [[ "$lud16" != "" ]] && [[ "$nip05" != "" ]]; then
         processed_string=$(process_string "$pubkey,$name,$lud16")
@@ -119,5 +119,5 @@ json_payload=$(printf "[%s]" "$(IFS=,; echo "${json_objects[*]}")")
 
 # Send the JSON payload
 if [ "$json_payload" != "[]" ]; then
-    curl -X POST -H "Content-Type: application/json" -d "$json_payload" "$webhook_url"
+    /usr/bin/curl -X POST -H "Content-Type: application/json" -d "$json_payload" "$webhook_url"
 fi
