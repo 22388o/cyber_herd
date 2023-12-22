@@ -9,8 +9,10 @@ webhook_url="http://127.0.0.1:8090/cyber_herd"
 
 relay_urls_string="${relay_urls[@]}"
 tag_string=$(printf " -t t=%s" "${tags[@]}")
-temp_file="./pubkeys.txt"
 midnight=$(date -d "$(date '+%Y-%m-%d 00:00:00')" '+%s')
+
+# Fetch existing cyberherd public keys from the API
+existing_pubkeys=($(/usr/bin/curl -s "http://127.0.0.1:8090/view_cyber_herd" | jq -r '.[].pubkey'))
 
 # Remove repeating substrings
 remove_repeats() {
@@ -47,14 +49,6 @@ process_string() {
     # Return the final output
     echo "$output"
 }
-
-# Read the existing file to get an array of cyberherd public keys
-existing_pubkeys=()
-if [ -f "$temp_file" ]; then
-    while IFS=, read -r pubkey; do
-        existing_pubkeys+=("$pubkey")
-    done < "$temp_file"
-fi
 
 # Get id of most recent tagged post
 initial_output=$(/usr/local/bin/nak -s req -k 1 $tag_string -a $hex_key --since $midnight $relay_urls_string | /usr/bin/jq -s 'sort_by(.created_at) | last | .id')
@@ -105,23 +99,19 @@ do
         
         # Split processed string into pubkey and lud16
         IFS=',' read -r processed_pubkey processed_lud16 <<< "$processed_string"
-
-        echo "$processed_pubkey" >> "$temp_file"
 	
 	# encode pubkey to npub
 	npub=$(/usr/local/bin/nak encode npub $processed_pubkey)
-
+	nprofile=$(/usr/local/bin/nak encode nprolie $processed_pubkey)
+	
         # Construct JSON object and add it to the array
         json_object="{\"event_id\":\"$event_id\",\"author_pubkey\":\"$hex_key\",\"pubkey\":\"$processed_pubkey\",\"npub\":\"$npub\",\"lud16\":\"$processed_lud16\"}" 
         json_objects+=("$json_object")
     fi
 done
 
-# Combine array elements into a JSON array
+# Combine array elements into a JSON array and send the payload
 json_payload=$(printf "[%s]" "$(IFS=,; echo "${json_objects[*]}")")
-
-# Send the JSON payload
 if [ "$json_payload" != "[]" ]; then
-    #/usr/bin/curl -X POST -H "Content-Type: application/json" -d "$json_payload" "$webhook_url"
-    echo $json_payload
+    /usr/bin/curl -X POST -H "Content-Type: application/json" -d "$json_payload" "$webhook_url"
 fi
