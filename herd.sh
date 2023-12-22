@@ -11,8 +11,10 @@ relay_urls_string="${relay_urls[@]}"
 tag_string=$(printf " -t t=%s" "${tags[@]}")
 midnight=$(date -d "$(date '+%Y-%m-%d 00:00:00')" '+%s')
 
-# Fetch existing cyberherd public keys from the API
-existing_pubkeys=($(/usr/bin/curl -s "http://127.0.0.1:8090/view_cyber_herd" | jq -r '.[].pubkey'))
+# Fetch existing cyberherd public keys and the most recent event_id from the API
+view_cyber_herd_response=$(curl -s "http://127.0.0.1:8090/view_cyber_herd")
+existing_pubkeys=($(echo "$view_cyber_herd_response" | jq -r '.[].pubkey'))
+event_id=$(echo "$view_cyber_herd_response" | jq -r '.[0].event_id') #event_id is the same in all records, use the first one.
 
 # Remove repeating substrings
 remove_repeats() {
@@ -49,6 +51,19 @@ process_string() {
     # Return the final output
     echo "$output"
 }
+
+# Check if event_id is empty or null and fetch if necessary
+if [ -z "$event_id" ] || [ "$event_id" == "null" ]; then
+    initial_output=$(/usr/local/bin/nak -s req -k 1 $tag_string -a $hex_key --since $midnight $relay_urls_string | /usr/bin/jq -s 'sort_by(.created_at) | last | .id')
+    
+    if [ -z "$initial_output" ] || [ "$initial_output" == "null" ]; then
+        echo "Error: Initial command returned null or empty output."
+        exit 1
+    fi
+
+    # Remove quotes from the initial output
+    event_id=$(echo $initial_output | tr -d '"')
+fi
 
 # Get id of most recent tagged post
 initial_output=$(/usr/local/bin/nak -s req -k 1 $tag_string -a $hex_key --since $midnight $relay_urls_string | /usr/bin/jq -s 'sort_by(.created_at) | last | .id')
@@ -87,7 +102,7 @@ do
     
     if [ -z "$output" ] || [ "$output" == "null" ]; then
       echo "Error: Third command returned null or empty output for pubkey $pubkey."
-      continue
+      exit 1
     fi
     
     # Extract nip05 and LUD-16 values
@@ -102,10 +117,10 @@ do
 	
 	# encode pubkey to npub
 	npub=$(/usr/local/bin/nak encode npub $processed_pubkey)
-	nprofile=$(/usr/local/bin/nak encode nprolie $processed_pubkey)
+	nprofile=$(/usr/local/bin/nak encode nprofile $processed_pubkey)
 	
         # Construct JSON object and add it to the array
-        json_object="{\"event_id\":\"$event_id\",\"author_pubkey\":\"$hex_key\",\"pubkey\":\"$processed_pubkey\",\"npub\":\"$npub\",\"lud16\":\"$processed_lud16\"}" 
+        json_object="{\"event_id\":\"$event_id\",\"author_pubkey\":\"$hex_key\",\"pubkey\":\"$processed_pubkey\",\"npub\":\"$npub\",\"nprofile\":\"$nprofile\",\"lud16\":\"$processed_lud16\"}" 
         json_objects+=("$json_object")
     fi
 done
