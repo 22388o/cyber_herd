@@ -120,7 +120,7 @@ do
 	nprofile=$(/usr/local/bin/nak encode nprofile $processed_pubkey)
 	
         # Construct JSON object and add it to the array
-        json_object="{\"event_id\":\"$event_id\",\"author_pubkey\":\"$hex_key\",\"pubkey\":\"$processed_pubkey\",\"npub\":\"$npub\",\"nprofile\":\"$nprofile\",\"lud16\":\"$processed_lud16\"}" 
+        json_object="{\"event_id\":\"$event_id\",\"author_pubkey\":\"$hex_key\",\"pubkey\":\"$processed_pubkey\",\"npub\":\"$npub\",\"nprofile\":\"$nprofile\",\"lud16\":\"$processed_lud16\",\"notified\":\"False\",\"payouts\":\"0"}" 
         json_objects+=("$json_object")
     fi
 done
