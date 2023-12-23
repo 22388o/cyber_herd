@@ -12,7 +12,7 @@ tag_string=$(printf " -t t=%s" "${tags[@]}")
 midnight=$(date -d "$(date '+%Y-%m-%d 00:00:00')" '+%s')
 
 # Fetch existing cyberherd public keys and most recent event_id
-view_cyber_herd_response=$(curl -s "http://127.0.0.1:8090/view_cyber_herd")
+view_cyber_herd_response=$(curl -s "http://127.0.0.1:8090/get_cyber_herd")
 existing_pubkeys=($(echo "$view_cyber_herd_response" | jq -r '.[].pubkey'))
 event_id=$(echo "$view_cyber_herd_response" | jq -r '.[0].event_id')
 
