@@ -26,12 +26,8 @@ Before running the script, the following variables need to be set:
 
 1. **Initial Data Fetch**: Queries the Nostr relays for the latest event ID matching the specified tags and public key.
 2. **Event Data Retrieval**: Fetches repost (kind 6) events using this ID and extracts public keys from these events.
-3. **Data Processing**: For each unique public key, retrieves related data, extracts the `name` and `LUD-16` values, and sends them to the specified webhook URL if they are new.  In the context of the Lightning Goats project these values are later used to reward up to 10 users who have joined the Lightning Goats Cyber Herd by reposting the daily "Zap notes. Feed Goats." post with a #cyber-herd tag.  This happens each time the feeder is triggered giving "treats" (sats) to the cyber herd along with dispensing actual goat treats to the Lightning Goats goat herd irl.
+3. **Data Processing**: For each unique public key, retrieves related data, extracts the `name` and `LUD-16` values, and sends them to the specified webhook URL if they are new.  In the context of the Lightning Goats project these values are later used to reward up to 10 users who have joined the Lightning Goats Cyber Herd by reposting the daily "Zap notes. Feed Goats." post with a #CyberHerd tag.  This happens each time the feeder is triggered giving "treats" (sats) to the cyber herd along with dispensing actual goat treats to the Lightning Goats goat herd irl.
 
-## Temporary File
-
-- The script uses a temporary file (`/tmp/lud16_values.txt`) to store processed data.
-- The temporary file is read to avoid reprocessing the same public keys.
 
 ## Dependencies
 
@@ -44,9 +40,8 @@ Before running the script, the following variables need to be set:
 
 1. Set the configuration variables in the script as per your requirement.
 2. chmod +x /home/user/bin/herd.sh
-3. Run the script via cron: */3 * * * * /home/user/bin/herd.sh, or use the unit files for controlling execution.
+3. Run the script via cron: */3 * * * * /home/user/bin/herd.sh, or use unit files for controlling execution.
 4. The script will process data and send updates to the configured webhook URL.
-5. Set a cronjob to delete the temp file at midnight: 0 0 * * * rm /tmp/lud16_values.txt
 
 ## Note
 
