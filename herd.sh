@@ -2,7 +2,7 @@
 
 # Configuration variables
 hex_key="669ebbcccf409ee0467a33660ae88fd17e5379e646e41d7c236ff4963f3c36b6"
-tags=("CyberHerd" "LightningGoats")
+tags=("CyberHerd")
 limit=10
 relay_urls=("wss://lnb.bolverker.com/nostrclient/api/v1/relay" "wss://relay.damus.io" "wss://relay.primal.net")
 webhook_url="http://127.0.0.1:8090/cyber_herd"
@@ -38,10 +38,9 @@ remove_repeats() {
     echo "$1" | sed -r 's/(.*)\1+/\1/'
 }
 
-# Process string to remove repeating values
 process_string() {
     local input_string="$1"
-    input_string=$(echo "$input_string" | tr -d '\n')
+    input_string=$(echo "$input_string" | tr -d '\n' | tr -d '\r' | tr -d '\t')  # Remove newlines, carriage returns, and tabs
     local output=""
     IFS=',' read -ra segments <<< "$input_string"
     for segment in "${segments[@]}"; do
@@ -66,14 +65,16 @@ fi
 
 # Fetch pubkeys which have reposted the tagged note
 raw_pubkeys=$(/usr/local/bin/nak -s req -k 6 -e $event_id -l $limit --since $midnight $relay_urls_string)
+
 if ! is_json_valid "$raw_pubkeys"; then
     echo "Error: Invalid JSON received for public keys."
     exit 1
 fi
+
 pubkeys=$(echo "$raw_pubkeys" | jq -r -s 'sort_by(.created_at) | .[] | .pubkey')
 [ -z "$pubkeys" ] && { echo "Error: Unable to fetch public keys."; exit 1; }
 
-# Loop through each public key to get metadata
+# Loop through each public key to get metadata #TODO  maybe rewrite using authors, no loop.
 json_objects=()
 for pubkey in $pubkeys; do
     [[ " ${existing_pubkeys[*]} " =~ " $pubkey " ]] && continue
@@ -84,22 +85,29 @@ for pubkey in $pubkeys; do
     fi
 
     output=$(echo "$raw_output" | jq)
-    nip05=$(echo "$output" | jq -r '.content | fromjson | .nip05')
-    lud16=$(echo "$output" | jq -r '.content | fromjson | .lud16')
-    display_name=$(echo "$output" | jq -r '.content | fromjson | .display_name')
+    nip05=$(process_string "$(echo "$output" | jq -r '.content | fromjson | .nip05')")
+    lud16=$(process_string "$(echo "$output" | jq -r '.content | fromjson | .lud16')")
+    display_name=$(process_string "$(echo "$output" | jq -r '.content | fromjson | .display_name')")
     
-    if [[ -n "$lud16" ]] && [[ -n "$nip05" ]]; then
-        processed_string=$(process_string "$pubkey,$lud16")
-        IFS=',' read -r processed_pubkey processed_lud16 <<< "$processed_string"
-        npub=$(/usr/local/bin/nak encode npub $processed_pubkey)
-        nprofile=$(/usr/local/bin/nak encode nprofile $processed_pubkey)
-        json_objects+=("{\"display_name\":\"$display_name\",\"event_id\":\"$event_id\",\"author_pubkey\":\"$hex_key\",\"pubkey\":\"$processed_pubkey\",\"npub\":\"$npub\",\"nprofile\":\"$nprofile\",\"lud16\":\"$processed_lud16\",\"notified\":\"False\",\"payouts\":\"0\"}")
+    if [[ -n "$nip05" && "$nip05" != "null" ]]; then
+        decoded_nip05=$(/usr/local/bin/nak decode "$nip05")
+        if [[ "$decoded_nip05" == "$processed_pubkey" ]]; then
+            if [[ -n "$lud16" && "$lud16" != "null" ]]; then
+                nprofile=$(/usr/local/bin/nak encode nprofile $processed_pubkey)
+                json_objects=("{\"display_name\":\"$display_name\",\"event_id\":\"$event_id\",\"pubkey\":\"$processed_pubkey\",\"nprofile\":\"$nprofile\",\"lud16\":\"$processed_lud16\",\"notified\":\"False\",\"payouts\":\"0\"}")
+            fi
+        fi
+    fi
+
+    if [ ${#json_objects[@]} -ne 0 ]; then
+        json_payload=$(printf "[%s]" "$(IFS=,; echo "${json_objects[*]}")")
+        if is_json_valid "$json_payload"; then
+            curl -X POST -H "Content-Type: application/json" -d "$json_payload" "$webhook_url"
+            json_objects=()  # Reset json_objects after successful sending
+        else
+            echo "Error: Invalid JSON payload."
+            echo "$json_payload"
+        fi
     fi
 done
-
-# Send JSON payload if not empty
-if [ ${#json_objects[@]} -ne 0 ]; then
-    json_payload=$(printf "[%s]" "$(IFS=,; echo "${json_objects[*]}")")
-    curl -X POST -H "Content-Type: application/json" -d "$json_payload" "$webhook_url"
-fi
 
