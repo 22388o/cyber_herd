@@ -63,7 +63,7 @@ if [ -z "$event_id" ] || [ "$event_id" == "null" ]; then
 fi
 
 # Fetch pubkeys which have reposted or liked the tagged note
-raw_pubkeys=$(/usr/local/bin/nak -s req -k 6 -k 7 -e $event_id -l $limit --since $midnight $relay_urls_string)
+raw_pubkeys=$(/usr/local/bin/nak -s req -k 6 -e $event_id -l $limit --since $midnight $relay_urls_string)
 
 if ! is_json_valid "$raw_pubkeys"; then
     echo "Error: Invalid JSON received for public keys."
@@ -87,7 +87,11 @@ for line in "${json_lines[@]}"; do
     pubkey=$(echo "$line" | jq -r '.pubkey')
     kind=$(echo "$line" | jq -r '.kind')
 
-    pubkey_kinds["$pubkey"]=$kind
+    if [ -n "$pubkey" ]; then
+        pubkey_kinds["$pubkey"]=$kind
+    else
+        echo "Warning: Invalid public key found in JSON line."
+    fi
 done
 
 # Loop through each public key to get metadata #TODO  maybe rewrite using authors, no loop.
