@@ -4,7 +4,7 @@
 hex_key="669ebbcccf409ee0467a33660ae88fd17e5379e646e41d7c236ff4963f3c36b6"
 tags=("CyberHerd")
 limit=10
-relay_urls=("wss://lnb.bolverker.com/nostrclient/api/v1/relay" "wss://relay.damus.io" "wss://relay.primal.net")
+relay_urls=("ws://127.0.0.1:3002/nostrclient/api/v1/relay")
 webhook_url="http://127.0.0.1:8090/cyber_herd"
 
 relay_urls_string="${relay_urls[@]}"
@@ -52,7 +52,7 @@ process_string() {
 
 # Fetch initial event_id if necessary
 if [ -z "$event_id" ] || [ "$event_id" == "null" ]; then
-    raw_event_id=$(/usr/local/bin/nak -s req -k 1 $tag_string -a $hex_key --since $midnight $relay_urls_string)
+    raw_event_id=$(/usr/local/bin/nak req -k 1 $tag_string -a $hex_key --since $midnight $relay_urls_string)
     if ! is_json_valid "$raw_event_id"; then
         echo "Error: Invalid JSON received for initial event_id."
         exit 1
@@ -63,7 +63,7 @@ if [ -z "$event_id" ] || [ "$event_id" == "null" ]; then
 fi
 
 # Fetch pubkeys which have reposted or liked the tagged note
-raw_pubkeys=$(/usr/local/bin/nak -s req -k 6 -e $event_id -l $limit --since $midnight $relay_urls_string)
+raw_pubkeys=$(/usr/local/bin/nak req -k 6 -e $event_id -l $limit --since $midnight $relay_urls_string)
 
 if ! is_json_valid "$raw_pubkeys"; then
     echo "Error: Invalid JSON received for public keys."
@@ -104,18 +104,22 @@ for pubkey in "${!pubkey_kinds[@]}"; do
     if [[ " ${existing_pubkeys[*]} " =~ " $pubkey " ]] || [[ $pubkey == $hex_key ]]; then
         continue
     fi
+    
+    # Fetch metadata for each pubkey and ensure only the most recent record is used
+    raw_output=$(/usr/local/bin/nak req -k 0 -a "$pubkey" $relay_urls_string)
+    
+    # Sort the results by 'created_at' in descending order and get the most recent record
+    most_recent_record=$(echo "$raw_output" | jq -s 'sort_by(.created_at) | reverse | .[0]')
 
-    # Fetch metadata for each pubkey
-    raw_output=$(/usr/local/bin/nak -s req -k 0 -a "$pubkey" -l 1 $relay_urls_string)
-    if ! is_json_valid "$raw_output"; then
+    if ! is_json_valid "$most_recent_record"; then
         echo "Error: Invalid JSON received for pubkey $pubkey."
         continue
     fi
 
-    # Extract metadata fields from raw_output
-    nip05=$(process_string "$(echo "$raw_output" | jq -r '.content | fromjson | .nip05')")
-    lud16=$(process_string "$(echo "$raw_output" | jq -r '.content | fromjson | .lud16')")
-    display_name=$(process_string "$(echo "$raw_output" | jq -r '.content | fromjson | .display_name')")
+    # Extract metadata fields from most_recent_record
+   nip05=$(process_string "$(echo "$most_recent_record" | jq -r '.content | fromjson | .nip05')")
+   lud16=$(process_string "$(echo "$most_recent_record" | jq -r '.content | fromjson | .lud16')")
+   display_name=$(process_string "$(echo "$most_recent_record" | jq -r '.content | fromjson | .display_name')")
 
     # Check and construct JSON object
     if [[ -n "$lud16" && "$lud16" != "null" ]] && [[ -n "$nip05" ]]; then
@@ -139,4 +143,3 @@ if [ ${#json_objects[@]} -ne 0 ]; then
             echo "$json_payload"
         fi
 fi
-
