@@ -6,4 +6,4 @@ After=fastapi_app.service
 User=sat
 Group=sat
 WorkingDirectory=/home/sat/bin
-ExecStart=/home/sat/bin/herd.sh
+ExecStart=/home/sat/bin/herd.py
