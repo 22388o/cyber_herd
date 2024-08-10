@@ -1,4 +1,6 @@
 #!/bin/bash
+echo "Warning: This script is deprecated and will no longer be maintained. Please use herd.py instead."
+
 
 # Configuration variables
 hex_key="669ebbcccf409ee0467a33660ae88fd17e5379e646e41d7c236ff4963f3c36b6"
