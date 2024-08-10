@@ -1,9 +1,9 @@
 [Unit]
-Description=Runs Cyber Herd Script every minute
+Description=Restart CyberHerd Service at midnight
 
 [Timer]
-OnBootSec=2min
-OnUnitActiveSec=1min
+OnCalendar=*-*-* 00:00:00
+Persistent=true
 
 [Install]
 WantedBy=timers.target
